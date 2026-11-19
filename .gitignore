@@ -5,3 +5,4 @@ npm-debug.log*
 techverse.db
 techverse.db-shm
 techverse.db-wal
+.neon

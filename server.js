@@ -2,7 +2,7 @@ const path = require("path");
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const db = require("./database");
+const { pool, initializeDatabase } = require("./database");
 
 require("dotenv").config();
 
@@ -16,15 +16,14 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// API status
 app.get("/api/status", (req, res) => {
   res.json({
     message: "TechVerse Secure API is running!",
-    database: "SQLite connected"
+    database: "Neon PostgreSQL connected"
   });
 });
 
-// Registration API
+// Registration
 app.post("/api/register", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -42,11 +41,12 @@ app.post("/api/register", async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const existingUser = db.prepare(
-      "SELECT id FROM users WHERE email = ?"
-    ).get(normalizedEmail);
+    const existingUser = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [normalizedEmail]
+    );
 
-    if (existingUser) {
+    if (existingUser.rows.length > 0) {
       return res.status(409).json({
         message: "Account already exists."
       });
@@ -54,19 +54,20 @@ app.post("/api/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    db.prepare(`
-      INSERT INTO users (email, password)
-      VALUES (?, ?)
-    `).run(normalizedEmail, hashedPassword);
+    await pool.query(
+      `INSERT INTO users (email, password)
+       VALUES ($1, $2)`,
+      [normalizedEmail, hashedPassword]
+    );
 
     return res.status(201).json({
       message: "Registration successful!"
     });
 
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("Registration error:", error.message);
 
-    if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+    if (error.code === "23505") {
       return res.status(409).json({
         message: "Account already exists."
       });
@@ -78,7 +79,7 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// Login API
+// Login
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -95,9 +96,12 @@ app.post("/api/login", async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const user = db.prepare(
-      "SELECT id, email, password FROM users WHERE email = ?"
-    ).get(normalizedEmail);
+    const result = await pool.query(
+      "SELECT id, email, password FROM users WHERE email = $1",
+      [normalizedEmail]
+    );
+
+    const user = result.rows[0];
 
     if (
       !user ||
@@ -120,7 +124,7 @@ app.post("/api/login", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("Login error:", error.message);
 
     return res.status(500).json({
       message: "Server error."
@@ -128,7 +132,7 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// JWT authentication middleware
+// JWT authentication
 function authenticateToken(req, res, next) {
   const authHeader = req.headers.authorization;
 
@@ -138,11 +142,9 @@ function authenticateToken(req, res, next) {
     });
   }
 
-  const token = authHeader.slice(7);
-
   try {
     req.user = jwt.verify(
-      token,
+      authHeader.slice(7),
       process.env.JWT_SECRET
     );
 
@@ -155,7 +157,7 @@ function authenticateToken(req, res, next) {
   }
 }
 
-// Protected profile API
+// Protected profile
 app.get("/api/profile", authenticateToken, (req, res) => {
   res.json({
     message: "Welcome to your protected dashboard!",
@@ -163,8 +165,20 @@ app.get("/api/profile", authenticateToken, (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`TechVerse Secure running on port ${PORT}`);
-  console.log("SQLite database authentication enabled.");
-});
+// Start only after PostgreSQL initialization
+async function startServer() {
+  try {
+    await initializeDatabase();
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`TechVerse Secure running on port ${PORT}`);
+      console.log("Neon PostgreSQL authentication enabled.");
+    });
+
+  } catch (error) {
+    console.error("Database startup failed:", error.message);
+    process.exit(1);
+  }
+}
+
+startServer();

@@ -1,23 +1,33 @@
-const path = require("path");
-const { DatabaseSync } = require("node:sqlite");
+require("dotenv").config();
 
-const db = new DatabaseSync(
-  path.join(__dirname, "techverse.db")
-);
+const { Pool } = require("pg");
 
-db.exec("PRAGMA journal_mode = WAL");
-db.exec("PRAGMA foreign_keys = ON");
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is missing from .env");
+}
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 5,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000
+});
 
-console.log("TechVerse SQLite database connected!");
+async function initializeDatabase() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      name TEXT,
+      email TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
-module.exports = db;
+  console.log("TechVerse Neon PostgreSQL connected!");
+}
+
+module.exports = {
+  pool,
+  initializeDatabase
+};
