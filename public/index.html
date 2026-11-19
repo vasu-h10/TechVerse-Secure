@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechVerse Secure</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      color: #fff;
+      background: radial-gradient(circle at top, #1c3764, #080e1c 65%);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 410px;
+      padding: 32px;
+      border: 1px solid #293b59;
+      border-radius: 20px;
+      background: #111c30;
+      box-shadow: 0 20px 60px #0008;
+    }
+
+    .brand {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 35px;
+    }
+
+    .brand span { color: #65a0ff; }
+
+    h1 { font-size: 27px; margin-bottom: 8px; }
+
+    .subtitle {
+      color: #9eacc4;
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin: 17px 0 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 9px;
+      border: 1px solid #354763;
+      background: #0a1425;
+      color: white;
+      outline: none;
+    }
+
+    input:focus { border-color: #5794ff; }
+
+    .password-wrap {
+      position: relative;
+    }
+
+    .password-wrap input {
+      padding-right: 50px;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 30px;
+      margin: 0;
+      padding: 5px;
+      background: transparent;
+      color: #9eacc4;
+      font-size: 18px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 18px;
+      border: 0;
+      border-radius: 9px;
+      background: #3979f6;
+      color: white;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:disabled { opacity: .6; }
+
+    .switch {
+      margin-top: 23px;
+      text-align: center;
+      font-size: 13px;
+      color: #aab8ce;
+    }
+
+    .switch button {
+      width: auto;
+      padding: 0;
+      margin: 0;
+      background: none;
+      color: #78aaff;
+    }
+
+    #status {
+      margin-top: 18px;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .success { color: #56dfa0; }
+    .error { color: #ff8585; }
+
+    .hidden { display: none; }
+
+    .logout { background: #34445e; }
+  </style>
+</head>
+<body>
+
+  <main class="card">
+    <div class="brand">TechVerse <span>Secure</span></div>
+
+    <section id="authSection">
+      <h1 id="heading">Welcome back</h1>
+      <p class="subtitle" id="subtitle">
+        Sign in to access your account.
+      </p>
+
+      <form id="authForm">
+        <div id="nameField" class="hidden">
+          <label for="name">Full name</label>
+          <input id="name" type="text" placeholder="Your name">
+        </div>
+
+        <label for="email">Email address</label>
+        <input id="email" type="email"
+          placeholder="you@example.com" required>
+
+        <label for="password">Password</label>
+        <div class="password-wrap">
+          <input id="password" type="password"
+            placeholder="Minimum 8 characters"
+            minlength="8" required>
+          <button class="toggle-password" id="togglePassword"
+            type="button" aria-label="Show password"
+            aria-pressed="false">👁</button>
+        </div>
+
+        <button id="submitBtn" type="submit">Sign in</button>
+      </form>
+
+      <p class="switch">
+        <span id="switchText">Don't have an account?</span>
+        <button id="switchBtn" type="button">Sign up</button>
+      </p>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <h1>Welcome!</h1>
+      <p class="subtitle">You are inside your protected dashboard.</p>
+      <p id="profileEmail"></p>
+      <button id="logoutBtn" class="logout">Log out</button>
+    </section>
+
+    <div id="status" role="status" aria-live="polite"></div>
+  </main>
+
+<script>
+
+  document.getElementById("togglePassword").addEventListener("click", () => {
+    const password = document.getElementById("password");
+    const toggle = document.getElementById("togglePassword");
+    const visible = password.type === "password";
+
+    password.type = visible ? "text" : "password";
+    toggle.textContent = visible ? "🙈" : "👁";
+    toggle.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+    toggle.setAttribute("aria-pressed", String(visible));
+  });
+
+  const authSection = document.getElementById("authSection");
+  const dashboard = document.getElementById("dashboard");
+  const authForm = document.getElementById("authForm");
+  const statusBox = document.getElementById("status");
+
+  let isSignup = false;
+  let authToken = null;
+
+  function showStatus(message, type) {
+    statusBox.textContent = message;
+    statusBox.className = type;
+  }
+
+  document.getElementById("switchBtn").onclick = () => {
+    isSignup = !isSignup;
+
+    document.getElementById("heading").textContent =
+      isSignup ? "Create account" : "Welcome back";
+
+    document.getElementById("subtitle").textContent =
+      isSignup ? "Create your TechVerse account." :
+      "Sign in to access your account.";
+
+    document.getElementById("nameField").classList.toggle("hidden", !isSignup);
+
+    document.getElementById("name").required = isSignup;
+
+    document.getElementById("submitBtn").textContent =
+      isSignup ? "Create account" : "Sign in";
+
+    document.getElementById("switchText").textContent =
+      isSignup ? "Already have an account?" : "Don't have an account?";
+
+    document.getElementById("switchBtn").textContent =
+      isSignup ? "Sign in" : "Sign up";
+
+    showStatus("", "");
+  };
+
+  authForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const button = document.getElementById("submitBtn");
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    button.disabled = true;
+    showStatus("Please wait...", "");
+
+    try {
+      const endpoint = isSignup ? "register" : "login";
+
+      const response = await fetch(`/api/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Request failed.");
+      }
+
+      if (isSignup) {
+        isSignup = false;
+        document.getElementById("switchBtn").click();
+        showStatus("Account created! Please sign in.", "success");
+        return;
+      }
+
+      authToken = data.token;
+      await loadProfile();
+
+    } catch (error) {
+      showStatus(error.message || "Connection error.", "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  async function loadProfile() {
+    const response = await fetch("/api/profile", {
+      headers: {
+        "Authorization": `Bearer ${authToken}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      authToken = null;
+      throw new Error(data.message || "Could not load profile.");
+    }
+
+    document.getElementById("profileEmail").textContent =
+      "Signed in as: " + data.email;
+
+    authSection.classList.add("hidden");
+    dashboard.classList.remove("hidden");
+    showStatus("Authentication successful!", "success");
+  }
+
+  document.getElementById("logoutBtn").onclick = () => {
+    authToken = null;
+    dashboard.classList.add("hidden");
+    authSection.classList.remove("hidden");
+    authForm.reset();
+    showStatus("You have logged out.", "success");
+  };
+</script>
+
+</body>
+</html>
