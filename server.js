@@ -2,19 +2,25 @@ const path = require("path");
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const db = require("./database");
+
 require("dotenv").config();
 
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET is missing from .env");
+}
+
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const users = [];
-
-// Home API
+// API status
 app.get("/api/status", (req, res) => {
   res.json({
-    message: "TechVerse Secure API is running!"
+    message: "TechVerse Secure API is running!",
+    database: "SQLite connected"
   });
 });
 
@@ -36,9 +42,9 @@ app.post("/api/register", async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const existingUser = users.find(
-      user => user.email === normalizedEmail
-    );
+    const existingUser = db.prepare(
+      "SELECT id FROM users WHERE email = ?"
+    ).get(normalizedEmail);
 
     if (existingUser) {
       return res.status(409).json({
@@ -48,19 +54,25 @@ app.post("/api/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    users.push({
-      email: normalizedEmail,
-      password: hashedPassword
-    });
+    db.prepare(`
+      INSERT INTO users (email, password)
+      VALUES (?, ?)
+    `).run(normalizedEmail, hashedPassword);
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Registration successful!"
     });
 
   } catch (error) {
     console.error("Registration error:", error);
 
-    res.status(500).json({
+    if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+      return res.status(409).json({
+        message: "Account already exists."
+      });
+    }
+
+    return res.status(500).json({
       message: "Server error."
     });
   }
@@ -73,7 +85,8 @@ app.post("/api/login", async (req, res) => {
 
     if (
       typeof email !== "string" ||
-      typeof password !== "string"
+      typeof password !== "string" ||
+      !email.trim()
     ) {
       return res.status(400).json({
         message: "Email and password are required."
@@ -82,23 +95,26 @@ app.post("/api/login", async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const user = users.find(
-      user => user.email === normalizedEmail
-    );
+    const user = db.prepare(
+      "SELECT id, email, password FROM users WHERE email = ?"
+    ).get(normalizedEmail);
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (
+      !user ||
+      !(await bcrypt.compare(password, user.password))
+    ) {
       return res.status(401).json({
         message: "Invalid email or password."
       });
     }
 
     const token = jwt.sign(
-      { email: user.email },
+      { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    res.json({
+    return res.json({
       message: "Login successful!",
       token
     });
@@ -106,7 +122,7 @@ app.post("/api/login", async (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error."
     });
   }
@@ -125,12 +141,11 @@ function authenticateToken(req, res, next) {
   const token = authHeader.slice(7);
 
   try {
-    const decoded = jwt.verify(
+    req.user = jwt.verify(
       token,
       process.env.JWT_SECRET
     );
 
-    req.user = decoded;
     next();
 
   } catch (error) {
@@ -149,6 +164,7 @@ app.get("/api/profile", authenticateToken, (req, res) => {
 });
 
 // Start server
-app.listen(3000, "0.0.0.0", () => {
-  console.log("TechVerse Secure running on port 3000");
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`TechVerse Secure running on port ${PORT}`);
+  console.log("SQLite database authentication enabled.");
 });
