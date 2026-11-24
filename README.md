@@ -1,8 +1,14 @@
-# TechVerse Secure 🔐
+TechVerse Secure 🔐
 
 A full-stack authentication application built with Node.js, Express.js, HTML, CSS and JavaScript.
 
-## Features
+🚀 Live Demo
+
+"Open TechVerse Secure Application" (https://techverse-secure.onrender.com)
+
+Try the deployed application directly in your browser.
+
+Features
 
 - User registration
 - User login
@@ -14,20 +20,19 @@ A full-stack authentication application built with Node.js, Express.js, HTML, CS
 - Responsive interface
 - Logout functionality
 
-## Technologies
+Technologies
 
-| Technology | Purpose |
-|---|---|
-| HTML5 | Structure |
-| CSS3 | Design |
-| JavaScript | Frontend logic |
-| Node.js | Backend runtime |
-| Express.js | API development |
-| bcryptjs | Password hashing |
-| JWT | Authentication |
-| dotenv | Environment variables |
+Technology| Purpose
+HTML5| Structure
+CSS3| Design
+JavaScript| Frontend logic
+Node.js| Backend runtime
+Express.js| API development
+bcryptjs| Password hashing
+JWT| Authentication
+dotenv| Environment variables
 
-## Project Structure
+Project Structure
 
 - public/index.html
 - server.js
@@ -35,57 +40,58 @@ A full-stack authentication application built with Node.js, Express.js, HTML, CS
 - package-lock.json
 - .gitignore
 
-## Installation
+Installation
 
 Clone the repository:
 
-    git clone https://github.com/vasu-h10/TechVerse-Secure.git
+git clone https://github.com/vasu-h10/TechVerse-Secure.git
 
-    cd TechVerse-Secure
+cd TechVerse-Secure
 
 Install dependencies:
 
-    npm install
+npm install
 
 Create a private .env file containing:
 
-    JWT_SECRET=your_long_random_secret
+JWT_SECRET=your_long_random_secret
 
 Start the application:
 
-    node server.js
+node server.js
 
 Open http://localhost:3000
 
-## API Endpoints
+API Endpoints
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | /api/status | API status |
-| POST | /api/register | Register |
-| POST | /api/login | Login |
-| GET | /api/profile | Protected profile |
+Method| Endpoint| Purpose
+GET| /api/status| API status
+POST| /api/register| Register
+POST| /api/login| Login
+GET| /api/profile| Protected profile
 
-## Current Status
+Current Status
 
 - Frontend and backend integration: Complete
 - Registration and login: Complete
 - Password hashing: Complete
 - JWT authentication: Complete
 - Protected API: Complete
+- Cloud deployment: Deployed on Render
 - Permanent database: Planned
-- Cloud deployment: Planned
 
-## Important Notice
+Important Notice
 
 This is a learning prototype, not production-ready authentication software. User accounts are currently stored in memory and disappear when the server restarts.
 
-## Developer
+Developer
 
 Vasu
 
 GitHub: https://github.com/vasu-h10
 
-## License
+Live Application: https://techverse-secure.onrender.com
+
+License
 
 No open-source license has been added yet.
